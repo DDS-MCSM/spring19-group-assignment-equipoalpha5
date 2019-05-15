@@ -5,6 +5,6 @@
 #' @export
 #'
 #' @examples
-sample_function <- function() {
-  print("Hello world")
+download.data <- function() {
+
 }
