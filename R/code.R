@@ -1,4 +1,3 @@
-
 #
 #' Title - Initial configurations,
 #' A new directory will be created if not exists, where data will be stored
