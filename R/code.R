@@ -1,71 +1,68 @@
-#
-#' Title - Initial configurations,
-#' A new directory will be created if not exists, where data will be stored
+#' PhisTank
+#' Ref: https://www.phishtank.com/developer_info.php
+#' http://data.phishtank.com/data/online-valid.csv
+
+#' Download source data to local file
 #'
-#' @return None
-#' @export
+#' @param dstpath path where source data will be stored, tempdir set as default.
 #'
-#' @examples
-#' initial.config()
-#'
-initial.config <- function() {
-  tini <- Sys.time()
-  set.seed(666)
-  dir.data <- file.path(getwd(), "data")
-  if (!dir.exists(dir.data)) {
-    print("[*] Create data directory")
-    dir.create(dir.data)
-  }
+#' @return character, local path of downloaded file
+DownloadPTDData <- function(dstpath = tempdir()){
+  local.file <- paste(dstpath, "phishtank.txt",
+                      sep = ifelse(.Platform$OS.type == "windows", "\\", "/"))
+  source.raw.data <- "http://data.phishtank.com/data/online-valid.csv"
+  download.file(url = source.raw.data, destfile = local.file)
+  return(local.file)
 }
 
+#' Read raw data and returns as data.frame
+#'
+#' @param local.file
+#'
+#' @return data.frame
+BuildPTDDataFrame <- function(local.file = paste(tempdir(),
+                                                 "phishtank.txt",
+                                                 sep = ifelse(.Platform$OS.type == "windows", "\\", "/"))){
+  df <- read.csv(file = local.file, header = T,
+                 colClasses = c("integer", "character", "character", "character", "factor", "character", "factor", "factor"))
 
-#' Title - Donwload data
-#' This function will be used to download and read data in a csv format,
-#' the param scansio.url is the url of the data
-#' @return None
-#' @export
-#'
-#' @examples
-#' download.zipdata
-#'
-download.zipdata <- function() {
-  maxmind.url <- "https://iscxdownloads.cs.unb.ca/iscxdownloads/ISCX-URL-2016/ISCXURL2016.zip"
-  maxmind.file <- file.path(getwd(), "data", "maxmind.zip")
-  download.file(url = maxmind.url, destfile = maxmind.file)
-  zipfiles <- unzip(zipfile = maxmind.file, list = T)
-  maxmind.source <- zipfiles$Name[grep(pattern = ".*All.csv", x = zipfiles$Name)]
-  unzip(zipfile = maxmind.file, exdir = dir.data, files = maxmind.source)
-  maxmind.source <- file.path(getwd(), "data", maxmind.source)
-  df.maxmind <- read.csv(maxmind.source, stringsAsFactors = FALSE)
-  rm(maxmind.file, zipfiles)
+  return(df)
 }
 
-#' Title
+#' Get Tornodes data.frame
 #'
-#' @param scope: Num of data that will be taken
-#'
-#' @return None
-#' @export
-#'
-#' @examples
-#' generate.df(500)
-#' generate.df(1000)
-#'
-generate.df <- function(scope){
-  muestra <- sample(1:nrow(df.maxmind), scope)
-  df.scans <- df.maxmind[muestra,c(1:9,20:80)]
-  rm(muestra)
+#' @return data.frame
+GetPTDData <- function(dowload.time = Sys.time()){
+  lf <- DownloadPTDData()
+  df <- BuildPTDDataFrame(local.file = lf)
 
+  #Data frame objectives
+  df.objectives <- dplyr::select(df,url,submission_time,verification_time, target)
+  #df.objectives <- dplyr::summarise(df.objectives, total = sum(target))
+
+
+  # Tidy df.ptd
+  raw.descr.ptd <- apply(df, 1,
+                         function(x) as.character(jsonlite::toJSON(
+                           list(phish_id = x[1],
+                                phish_detail_url = x[3],
+                                submission_time = x[4],
+                                verified = x[5],
+                                verification_time = x[6],
+                                online = x[7],
+                                target = x[8]))))
+  raw.descr.ptd <- as.data.frame(raw.descr.ptd)
+  names(raw.descr.ptd) <- c("raw.descr")
+  df <- cbind(df, raw.descr.ptd)
+
+  df <- df[,c("url", "raw.descr")]
+  df$type <- as.factor(rep("url", nrow(df)))
+  df$source <- as.factor(rep("phishtank.com", nrow(df)))
+  df$timestamp <- rep(dowload.time, nrow(df))
+  names(df) <- c("ioc","source.info","type", "source", "timestamp")
+  df <- df[,c("ioc","type","source", "timestamp", "source.info")]
+  df$ioc <- as.character(df$ioc)
+  df$source.info <- as.character(df$source.info)
+  return(df)
 }
 
-#' Title - Function to clean data frame, the idea is to delete that that is not usefull for the analysis
-#'
-#' @return None
-#' @export
-#'
-#' @examples
-#' clean.df
-#'
-clean.df <- function(){
-
-}
