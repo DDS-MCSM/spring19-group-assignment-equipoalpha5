@@ -153,20 +153,10 @@ getIpGeolocated <- function(){
     df <- Geolocate_ip(df.ipdomain)
   }
 
-
-  m <- leaflet::leaflet(df)
-  m <- leaflet::addCircleMarkers(popup = df$target, color = ~ifelse(df$target =="Other", "blue", "red"))
-
-  # %>% addPolygons(stroke = FALSE, smoothFactor = 0.2 , fillOpacity = 1, color = ~factpal(postal_code))
-
-  m <- leaflet::addTiles(m)
-  # m <- leaflet(df) %>% addMarkers(popup = df$target)
+ m <- leaflet(df) %>% addCircleMarkers(popup = df$target, color = ~ifelse(df$target =="Other", "blue", "red"),radius = ~ifelse(df$target == "Other", 6, 10),stroke = FALSE, fillOpacity = 0.5) %>% addTiles(m)
+   #m <- leaflet::addMarkers(popup = df$target)
   m
-
-  # m <- leaflet(df) %>% addMarkers(popup = df$target)
-
-  # m <- addMarkers(m, lng=174.768, lat=-36.852, popup="The birthplace of R")
-  return(df)
+  return(m)
 }
 
 
