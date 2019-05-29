@@ -1,7 +1,20 @@
 ---
-title: "graficos"
+title: "Phising Attacks Dirigidos"
+author: "Group5"
+date: "5/30/2019"
 output: html_document
 ---
+
+```{r load_packages, echo = FALSE, cache = TRUE}
+# Paquetes necesarios
+pkg <- c("httr", "plyr", "leaflet", "iptools", "dplyr")
+# Instalar paquetes que no esten instalados
+new.pkg <- pkg[!(pkg %in% installed.packages())]
+if (length(new.pkg)) 
+{
+    install.packages(new.pkg)  
+}
+```
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -14,9 +27,23 @@ This is an R Markdown document. Markdown is a simple formatting syntax for autho
 When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
 
 ```{r cars}
-cars <- GroupAssignmentPackage::GetPTDData()
-summary(cars)
+
 ```
+
+
+
+```{r countDomains}
+domains <- GroupAssignmentPackage::getCountDomains()
+summary(domains)
+```
+
+
+
+```{r countTargets}
+targets <- GroupAssignmentPackage::getCountTarget()
+summary(targets)
+```
+
 
 ## Including Plots
 

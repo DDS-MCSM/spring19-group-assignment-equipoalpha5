@@ -6,7 +6,8 @@
 library(httr)
 library(plyr)
 library(leaflet)
-
+library(iptools)
+library(dplyr)
 #' Download source data to local file
 #'
 #'
@@ -31,53 +32,38 @@ DownloadPTDData <- function(dstpath = tempdir()){
 #' @export
 #'
 #' @examples
-geolocate_ip <- function(df){
+Geolocate_ip <- function(df){
 
 
   load("C:/Users/eeamoreno/Desktop/PracticaDriven/final/data/maxmind.rda")
-  # Seleccionamos una muestra de scans
+  #pasamos la ip a numerico y lo guardamos en la columna ip.num
   df$ip.num <- iptools::ip_to_numeric(df$ip)
 
 
 
   # Usamos multiples cpu's para geolocalizar IPs en rangos
-  if (verbose) print("[*] Foreach IP (source and destination) identify network range using parallel computing")
+  print("[*] Foreach IP (source and destination) identify network range using parallel computing")
   no_cores <- parallel::detectCores() - 1
   cl <- parallel::makeCluster(no_cores)
   parallel::clusterExport(cl, "df.maxmind")
+  #Identificamos el rango de de la ip
   df$sloc <- sapply(df$ip.num,
-                          function(ip)
-                            which((ip >= df.maxmind$min_numeric) &
-                                    (ip <= df.maxmind$max_numeric)))
+                    function(ip)
+                      which((ip >= df.maxmind$min_numeric) &
+                              (ip <= df.maxmind$max_numeric)))
 
   parallel::stopCluster(cl)
   rm(cl, no_cores)
 
-  # convert list with rang row number and failed detections to numeric
+  # creamos una columna sloc2 ya que las detecciones que han fallado porque no se encontro la ip
   df$sloc2 <- as.numeric(df$sloc)
   # Join and tidy data frame (source address)
-  if (verbose) print("[*] Joining source IP's with geolocation data")
+  print("[*] Joining source IP's with geolocation data")
   df <- dplyr::left_join(df, df.maxmind, by = c("sloc2" = "rowname"))
-  df <- dplyr::select(df, timestamp_ts, saddr, latitude, longitude, accuracy_radius,
-                      is_anonymous_proxy, is_satellite_provider)
-  names(df) <- c("timestamp", "hostname", "ip", "target", "online", "ip_num", "sloc2", "slatitude", "slongitude") #elegir parametros
-               #  "accuracy_radius", "is_anonymous_proxy", "is_satellite_provider")
 
-  # Join and tidy data frame (destination address)
-  # if (verbose) print("[*] Joining destination IP's with geolocation data")
-  # suppressMessages(library(dplyr))
-  # df.dst <- df %>%
-  #   left_join(df.maxmind, by = c("dloc" = "rowname")) %>%
-  #   select(daddr, latitude, longitude)
-  # names(df.dst) <- c("daddr", "dlatitude", "dlongitude")
-  # df <- dplyr::bind_cols(df, df.dst)
-  # rm(df.dst, df)
 
-  # Set categoric variables as factors
-  #if (verbose) print("[*] Tidy data and save it")
-  #df$is_anonymous_proxy <- as.factor(df$is_anonymous_proxy)
-  #df$is_satellite_provider <- as.factor(df$is_satellite_provider)
-  saveRDS(object = df, file = file.path(getwd(), "data", "maxmindoutput.rda"))
+  #guardamos el df con todas las variables
+  save(df, file = file.path(getwd(), "data", "ipgeoDF_All.rda"))
 
   #return dataframe
   return(df)
@@ -119,24 +105,24 @@ GetPTDData <- function(dowload.time = Sys.time()){
   #declara df donde se guardaran el hostname, ip, target y timestamp
   df.ipdomain <- data.frame("timestamp" = character(0), "hostname" = character(0), "ip" = character(0), "target" = character(0), "online" = character(0), stringsAsFactors=FALSE)
 
-   #recorrer df de hostnames para encontrar la ip a partir de la url del pishing
+  #recorrer df de hostnames para encontrar la ip a partir de la url del pishing
   for(i in 1:nrow(df.urls)) {
 
-     #parseamos la url para quedarnos solo con el dominio
-     array <- parse_url(df.urls[i,2])
+    #parseamos la url para quedarnos solo con el dominio
+    array <- httr::parse_url(df.urls[i,2])
 
-     print(array$hostname)
+    print(array$hostname)
 
-     #pasamos de hostname a ip
-     ip <- iptools::hostname_to_ip(array$hostname)
+    #pasamos de hostname a ip
+    ip <- iptools::hostname_to_ip(array$hostname)
 
-     #puede devolver mas de una ip asi que cojemos la primera de la lista
-     print(ip[[1]][1])
-     #df with ips and domain
-     fila <- data.frame("timestamp" = df.urls[i,1],"hostname" = array$hostname,"ip" = ip[[1]][1], "target" = df.urls[i,3], "online" = df.urls[i,4])
+    #puede devolver mas de una ip asi que cojemos la primera de la lista
+    print(ip[[1]][1])
+    #df with ips and domain
+    fila <- data.frame("timestamp" = df.urls[i,1],"hostname" = array$hostname,"ip" = ip[[1]][1], "target" = df.urls[i,3], "online" = df.urls[i,4])
 
-     #añadimos la nueva fila al df
-     df.ipdomain <- rbind(df.ipdomain, fila)
+    #añadimos la nueva fila al df
+    df.ipdomain <- rbind(df.ipdomain, fila)
   }
 
   rm(array)
@@ -145,8 +131,8 @@ GetPTDData <- function(dowload.time = Sys.time()){
   rm(df)
   rm(df.objectives)
   rm(df.urls)
-  df.ipdomain <- as.character(df.ipdomain$ip)
-  saveRDS(object = df.ipdomain, file = file.path(getwd(), "data", "ipdomain.rda"))
+  df.ipdomain$ip <- as.character(df.ipdomain$ip)
+  save(df.ipdomain, file = file.path(getwd(), "data", "ipdomainDF.rda"))
   return(df.ipdomain)
 
 }
@@ -161,18 +147,26 @@ getIpGeolocated <- function(){
 
   load <- TRUE
   if (load) {
-    load("C:/Users/eeamoreno/Desktop/PracticaDriven/final/data/ipdomainDF.rda")
+    load("C:/Users/eeamoreno/Desktop/PracticaDriven/final/data/ipgeoDF_ALL.rda")
   }else{
-    df <- GetPTDData()
+    df.ipdomain <- GetPTDData()
+    df <- Geolocate_ip(df.ipdomain)
   }
 
-  map.locations <- getIpGeolocated(df.2)
 
-  m <- leaflet(df) %>% addMarkers(popup = df$target)
-  m <- leaflet(df) %>% addCircleMarkers(popup = df$target, fillColor = )
-  m <- addTiles(m)
- # m <- addMarkers(m, lng=174.768, lat=-36.852, popup="The birthplace of R")
+  m <- leaflet::leaflet(df)
+  m <- leaflet::addCircleMarkers(popup = df$target, color = ~ifelse(df$target =="Other", "blue", "red"))
+
+  # %>% addPolygons(stroke = FALSE, smoothFactor = 0.2 , fillOpacity = 1, color = ~factpal(postal_code))
+
+  m <- leaflet::addTiles(m)
+  # m <- leaflet(df) %>% addMarkers(popup = df$target)
   m
+
+  # m <- leaflet(df) %>% addMarkers(popup = df$target)
+
+  # m <- addMarkers(m, lng=174.768, lat=-36.852, popup="The birthplace of R")
+  return(df)
 }
 
 
@@ -193,7 +187,7 @@ getCountTarget <- function(){
   #df donde se hace un count para ver el numero de ataques recibidos por empresa
   df.countTarget <- plyr::count(df, c("target"))
   dplyr::arrange(df.countTarget, desc(freq))
-  summary(df.countTarget)
+  return(df.countTarget)
 
 }
 
@@ -206,14 +200,15 @@ getCountTarget <- function(){
 getCountDomains <- function(){
   load <- TRUE
   if (load) {
-   df.ipdomain <- load("C:/Users/eeamoreno/Desktop/PracticaDriven/final/data/ipdomainDF.rda")
+     load("C:/Users/eeamoreno/Desktop/PracticaDriven/final/data/ipdomainDF.rda")
   }else{
-    df.ipdomain <- GetPTDData()
+    df <- GetPTDData()
+
   }
   #df donde hacemos un count de los diferentes hostnames existentes
-  df.countDomains <- plyr::count(df.ipdomain, c("hostname"))
+  df.countDomains <- plyr::count(df, c("hostname"))
   dplyr::arrange(df.countDomains, desc(freq))
-  summary(df.countDomains)
+  return(df.countDomains)
 
 }
 
