@@ -7,52 +7,61 @@ output: html_document
 
 ```{r load_packages, echo = FALSE, cache = TRUE}
 # Paquetes necesarios
-pkg <- c("httr", "plyr", "leaflet", "iptools", "dplyr")
-# Instalar paquetes que no esten instalados
-new.pkg <- pkg[!(pkg %in% installed.packages())]
-if (length(new.pkg)) 
-{
-    install.packages(new.pkg)  
-}
+# pkg <- c("httr", "plyr", "leaflet", "iptools", "dplyr")
+# # Instalar paquetes que no esten instalados
+# new.pkg <- pkg[!(pkg %in% installed.packages())]
+# if (length(new.pkg)) 
+# {
+#     install.packages(new.pkg)  
+# }
+```
+## Resumen
+A partir de un data frame conteniendo urls maliciosas de phising que se actualiza cada hora, observamos los dominios correspondientes y los geolocalizamos creando un data frame que vincula ips y dominios y empresas target suplantadas
+Adicionalmente, observamos el número total de ataques agrupado por empresas.
+
+### Requirimientos
+Datasets:
+-Phistank Dataset:http://data.phishtank.com/data/online-valid.cs
+-Maxmind dataset: https://geolite.maxmind.com/download/geoip/database/GeoLite2-City-CSV.zip
+
+
+```{r load_package}
+#source("./R/code.R")
+library(GroupAssignmentPackage)
 ```
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## R Markdown
+### Goal 1
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+Observar y reflejar en un mapa la ubicación geográfica de los servidores utilizados en los ataques. A partir de parsear la URL conseguimos el dominio, a partir de este sacamos la IP, utilizando la libreria iptools. Despues geolacalizamos la IP del servidor en el mapamundi.
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-m <- GroupAssignmentPackage::getIpGeolocated()
-m
+```{r mapIp}
+#no deja mostrar el mapa en el html
+#GroupAssignementProject::getIpGeolocated()
 
 ```
 
 
+## Goal 2
 
-```{r countDomains}
-domains <- GroupAssignmentPackage::getCountDomains()
-summary(domains)
+Ver la cantidad de ataques de phising agrupados por empresas suplantadas
+
+```{r Count targets, echo=FALSE}
+#getCountTarget()
+GroupAssignementProject::getCountTarget()
 ```
 
 
+## Goal 3
 
-```{r countTargets}
-targets <- GroupAssignmentPackage::getCountTarget()
-summary(targets)
-```
+Data frame que muestra la cantidad de veces que se repiten los dominios
 
-
-## Including Plots
-
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
+```{r Count targets, echo=FALSE}
+#getCountDomains()
+GroupAssignementProject::getCountDomains()
 ```
 
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
