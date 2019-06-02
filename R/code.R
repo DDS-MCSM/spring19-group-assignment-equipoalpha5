@@ -8,6 +8,9 @@ library(plyr)
 library(leaflet)
 library(iptools)
 library(dplyr)
+library(ggplot2)
+
+
 #' Download source data to local file
 #'
 #'
@@ -34,8 +37,8 @@ DownloadPTDData <- function(dstpath = tempdir()){
 #' @examples
 Geolocate_ip <- function(df){
 
-
-  load("C:/Users/eeamoreno/Desktop/PracticaDriven/final/data/maxmind.rda")
+  #Cambiar directorio
+  load.("C:/Users/eeamoreno/Desktop/PracticaDriven/final/data/maxmind.rda")
   #pasamos la ip a numerico y lo guardamos en la columna ip.num
   df$ip.num <- iptools::ip_to_numeric(df$ip)
 
@@ -153,9 +156,10 @@ getIpGeolocated <- function(){
     df <- Geolocate_ip(df.ipdomain)
   }
 
- m <- leaflet(df) %>% addCircleMarkers(popup = df$target, color = ~ifelse(df$target =="Other", "blue", "red"),radius = ~ifelse(df$target == "Other", 6, 10),stroke = FALSE, fillOpacity = 0.5) %>% addTiles()
-   #m <- leaflet::addMarkers(popup = df$target)
-  m
+  m <- leaflet(df)
+  m <- addCircleMarkers(map = m, popup = df$target, color = ~ifelse(df$target =="Other", "blue", "red"),radius = ~ifelse(df$target == "Other", 4, 8),stroke = FALSE, fillOpacity = 0.5)
+  m <- addTiles(map = m)
+  #m <- leaflet::addMarkers(popup = df$target)
   return(m)
 }
 
@@ -177,8 +181,25 @@ getCountTarget <- function(){
   #df donde se hace un count para ver el numero de ataques recibidos por empresa
   df.countTarget <- plyr::count(df, c("target"))
   dplyr::arrange(df.countTarget, desc(freq))
+
+
+
+  mytable <- table(df$target)
+  lbls <- paste(names(mytable), "\n", mytable, sep="")
+  pie(mytable, labels = lbls,
+      main="Pie Chart of Companies attacked by a phising")
+
+
+
   return(df.countTarget)
 
+  # Barplot
+  #bp<- ggplot(df, aes(x="", y=df$target, fill=df$target))+
+  #  geom_bar(width = 1, stat = "identity")
+  #pie <- bp + coord_polar("y", start=0)
+  #pie
+  #bp
+  #return(pie)
 }
 
 #' Title
@@ -190,7 +211,7 @@ getCountTarget <- function(){
 getCountDomains <- function(){
   load <- TRUE
   if (load) {
-     load("C:/Users/eeamoreno/Desktop/PracticaDriven/final/data/ipdomainDF.rda")
+    load("C:/Users/eeamoreno/Desktop/PracticaDriven/final/data/ipdomainDF.rda")
   }else{
     df <- GetPTDData()
 
@@ -201,5 +222,3 @@ getCountDomains <- function(){
   return(df.countDomains)
 
 }
-
-
