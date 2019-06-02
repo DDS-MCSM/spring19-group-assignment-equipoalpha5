@@ -43,9 +43,10 @@ Observar y reflejar en un mapa la ubicación geográfica de los servidores utili
 #GroupAssignementProject::getIpGeolocated()
 
 ```
+No se puede observar ningun patron claro, mas que los servidores estan mayoritariamente distribuidos entre Europa y Estados Unidos. Parece que muchos de los servidores se ecnuentran en los grandes proveedroes cloud como AWS o Azure.
 
 
-## Goal 2
+### Goal 2
 
 Ver la cantidad de ataques de phising agrupados por empresas suplantadas
 
@@ -54,8 +55,10 @@ Ver la cantidad de ataques de phising agrupados por empresas suplantadas
 GroupAssignementProject::getCountTarget()
 ```
 
+Observamos que la empresa mas suplantada és Paypal, la qual al ser una plataforma de pago online es un target bastante critico. La intencion es la de robar las credenciales del usuario para que luego el atacante las utilize para sus fines.
 
-## Goal 3
+
+### Goal 3
 
 Data frame que muestra la cantidad de veces que se repiten los dominios
 
@@ -64,4 +67,11 @@ Data frame que muestra la cantidad de veces que se repiten los dominios
 GroupAssignementProject::getCountDomains()
 ```
 
+
+### Conclusiones
+
+
+Para concluir se puede obsservar que empresas reciben mas ataques phishing, en que paises estan situados los servidores que contienen las URL maliciosas y con un analisis mas exhaustivo se podria hacer un analisis por tiempo viendo si existe algun patron de ataques.
+
+Para un uso professional se podria usar este estudio para bloquear las ips de origen de los ataques, para que una IP maliciosa conocida no pueda intentar realizar este tipo de ataque.
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
